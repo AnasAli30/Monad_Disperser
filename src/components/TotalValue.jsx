@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
 import { BrowserProvider, formatEther } from "ethers";
-import Balance from './Balance';
 
 function TotalValue({ parsedData = [], darkMode = false }) {
   const [totalValue, setTotalValue] = useState(0);
@@ -74,7 +73,9 @@ function TotalValue({ parsedData = [], darkMode = false }) {
           darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
         }`}>
           <span className="font-medium">Wallet Balance: </span>
-          <Balance />
+          <span className={darkMode ? 'text-purple-400' : 'text-purple-600'}>
+            {walletBalance.toFixed(4)} MON
+          </span>
         </div>
         
         <div className={`p-3 rounded ${

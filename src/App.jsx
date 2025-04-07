@@ -1,10 +1,14 @@
-import React, { useState, useCallback } from 'react';
-import { Send, Loader2, AlertCircle, CheckCircle2, Moon, Sun, Grid as Bridge } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Send, Loader2, AlertCircle, CheckCircle2, Moon, Sun, Grid as Bridge, Repeat, ExternalLink, Upload, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
-import { useAppKitAccount } from "@reown/appkit/react";
-import Balance from './components/Balance';
+import { useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
+import { BrowserProvider, formatEther } from "ethers";
 import TotalValue from './components/TotalValue';
+import { dispere } from './context/despere';
+import { deployContract } from './context/deploy';
+import TransactionHistory from './components/TransactionHistory';
+import Footer from './components/Footer';
 // import {  useConnect, useDisconnect } from '@reown/appkit/react';
 
 function ConnectButton() {
@@ -15,16 +19,65 @@ function App() {
   const [input, setInput] = useState('');
   const [parsedData, setParsedData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [bridgeMode, setBridgeMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [totalValue, setTotalValue] = useState(0);
   const [remainingBalance, setRemainingBalance] = useState(0);
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [sameValueMode, setSameValueMode] = useState(false);
+  const [sameValue, setSameValue] = useState('');
+  const [transactionHash, setTransactionHash] = useState('');
+  const [contractAddress, setContractAddress] = useState('');
+  const [isContractDeployed, setIsContractDeployed] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [transactions, setTransactions] = useState(() => {
+    const saved = localStorage.getItem('transactions');
+    return saved ? JSON.parse(saved) : [];
+  });
   
   const { address, isConnected } = useAppKitAccount();
+  const { walletProvider } = useAppKitProvider("eip155");
 //   const { connect } = useConnect();
 //   const { disconnect } = useDisconnect();
+
+  // Check for saved contract on component mount
+  useEffect(() => {
+    const savedContract = localStorage.getItem('disperserContract');
+    if (savedContract) {
+      setContractAddress(savedContract);
+      setIsContractDeployed(true);
+    }
+  }, []);
+
+  // Fetch wallet balance
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        if (!isConnected || !walletProvider) {
+          setCurrentBalance(0);
+          return;
+        }
+
+        const ethersProvider = new BrowserProvider(walletProvider);
+        const balance = await ethersProvider.getBalance(address);
+        const monBalance = parseFloat(formatEther(balance));
+        setCurrentBalance(monBalance);
+      } catch (err) {
+        console.error('Error fetching balance:', err);
+        setError('Failed to fetch wallet balance');
+        setCurrentBalance(0);
+      }
+    };
+
+    fetchBalance();
+  }, [isConnected, walletProvider, address]);
+
+  // Save transactions to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  }, [transactions]);
 
   const parseAddressValues = useCallback((text) => {
     setError('');
@@ -32,63 +85,188 @@ function App() {
     const parsed = [];
     let total = 0;
 
-    for (const line of lines) {
-      let address, value;
+    if (sameValueMode) {
+      // In same value mode, each line is just an address
+      for (const line of lines) {
+        const address = line.trim();
+        
+        if (!address) {
+          continue;
+        }
 
-      if (line.includes(',')) {
-        [address, value] = line.split(',');
-      } else if (line.includes(':')) {
-        [address, value] = line.split(':');
-      } else if (line.includes(' ')) {
-        [address, value] = line.split(/\s+/);
-      } else {
-        setError('Invalid format. Please use address,value or address:value or address value');
-        continue;
+        // Basic Ethereum address validation
+        if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+          setError('Invalid Ethereum address format detected');
+          continue;
+        }
+
+        const numericValue = parseFloat(sameValue);
+        if (isNaN(numericValue) || numericValue <= 0) {
+          setError('Invalid numeric value. Value must be greater than 0');
+          continue;
+        }
+
+        total += numericValue;
+        parsed.push({
+          address: address,
+          value: sameValue
+        });
       }
+    } else {
+      // Original parsing logic for different values
+      for (const line of lines) {
+        let address, value;
 
-      if (!address?.trim() || !value?.trim()) {
-        setError('Each line must contain both address and value');
-        continue;
+        if (line.includes(',')) {
+          [address, value] = line.split(',');
+        } else if (line.includes(':')) {
+          [address, value] = line.split(':');
+        } else if (line.includes(' ')) {
+          [address, value] = line.split(/\s+/);
+        } else {
+          setError('Invalid format. Please use address,value or address:value or address value');
+          continue;
+        }
+
+        if (!address?.trim() || !value?.trim()) {
+          setError('Each line must contain both address and value');
+          continue;
+        }
+
+        // Basic Ethereum address validation
+        if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
+          setError('Invalid Ethereum address format detected');
+          continue;
+        }
+
+        const numericValue = parseFloat(value.trim());
+        if (isNaN(numericValue) || numericValue <= 0) {
+          setError('Invalid numeric value. Value must be greater than 0');
+          continue;
+        }
+
+        total += numericValue;
+        parsed.push({
+          address: address.trim(),
+          value: value.trim()
+        });
       }
-
-      // Basic Ethereum address validation
-      if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
-        setError('Invalid Ethereum address format detected');
-        continue;
-      }
-
-      const numericValue = parseFloat(value.trim());
-      if (isNaN(numericValue)) {
-        setError('Invalid numeric value detected');
-        continue;
-      }
-
-      total += numericValue;
-      parsed.push({
-        address: address.trim(),
-        value: value.trim()
-      });
     }
 
     setTotalValue(total);
-    // Assuming we have a way to get the current balance, for now using a placeholder
-    const currentBalance = 1000; // Replace this with actual balance from your wallet/contract
-    setRemainingBalance(currentBalance - total);
+    const remaining = currentBalance - total;
+    setRemainingBalance(remaining);
+    
+    if (remaining < 0) {
+      setError(`Insufficient balance. You need ${Math.abs(remaining)} more MON to complete this transaction.`);
+    }
+    
     setParsedData(parsed);
-  }, []);
+  }, [currentBalance, sameValueMode, sameValue]);
+
+  // Add a useEffect to watch for changes to sameValue
+  useEffect(() => {
+    if (sameValueMode && input.trim()) {
+      parseAddressValues(input);
+    }
+  }, [sameValue, sameValueMode, input, parseAddressValues]);
+
+  const handleDeployContract = async () => {
+    setIsDeploying(true);
+    setError('');
+    setSuccess(false);
+    setContractAddress('');
+    setIsContractDeployed(false);
+
+    try {
+      if (!isConnected) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      // Deploy the contract
+      const result = await deployContract(walletProvider);
+      
+      if (result.success) {
+        setContractAddress(result.contractAddress);
+        setIsContractDeployed(true);
+        setSuccess(true);
+        
+        // Save contract address to local storage
+        localStorage.setItem('disperserContract', result.contractAddress);
+      } else {
+        // Check if this was a user rejection
+        if (result.userRejected) {
+          setError(result.error);
+          // Don't show this as a critical error, just inform the user
+        } else {
+          setError(result.error || 'Failed to deploy contract');
+        }
+      }
+    } catch (err) {
+      console.error('Error in handleDeployContract:', err);
+      setError(err.message || 'Failed to deploy contract');
+    } finally {
+      setIsDeploying(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setSuccess(false);
+    setError('');
+    setTransactionHash('');
 
     try {
-      // Simulate contract interaction
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Sending to contract:', parsedData);
-      setSuccess(true);
+      if (!isConnected) {
+        throw new Error("Please connect your wallet first");
+      }
+console.log(isContractDeployed,contractAddress)
+      if (!isContractDeployed || !contractAddress) {
+        throw new Error("Please deploy the contract first");
+      }
+
+      // Extract addresses and values from parsedData
+      const addresses = parsedData.map(item => item.address);
+      const values = parsedData.map(item => item.value);
+
+      // Call the dispere function with walletProvider and contractAddress
+      const result = await dispere(contractAddress, addresses, values, walletProvider);
+      
+      if (result.success) {
+        setSuccess(true);
+        setTransactionHash(result.transactionHash);
+        
+        // Remove contract from local storage after successful disperse
+        localStorage.removeItem('disperserContract');
+        setContractAddress('');
+        setIsContractDeployed(false);
+
+        // After successful transaction, add to history
+        const newTransaction = {
+          contractAddress,
+          transactionHash: result.transactionHash,
+          totalValue,
+          recipients: parsedData.map(item => ({
+            address: item.address,
+            value: item.value
+          })),
+          timestamp: new Date().toISOString()
+        };
+        
+        setTransactions(prev => [newTransaction, ...prev]);
+      } else {
+        // Check if this was a user rejection
+        if (result.userRejected) {
+          setError(result.error);
+          // Don't show this as a critical error, just inform the user
+        } else {
+          setError(result.error || 'Failed to send transaction');
+        }
+      }
     } catch (err) {
-      setError('Failed to send transaction');
+      console.error('Error in handleSubmit:', err);
+      setError(err.message || 'Failed to send transaction');
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +276,7 @@ function App() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`min-h-screen flex flex-col ${
         darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-purple-50 to-blue-50'
       }`}
     >
@@ -116,17 +294,16 @@ function App() {
               whileHover={{ scale: 1.05 }}
               className="flex items-center"
             >
-              <span className={`text-2xl font-bold ${
+              <span className={`text-xl sm:text-2xl font-bold ${
                 darkMode ? 'text-white' : 'text-gray-800'
               }`}>
                 Monad
               </span>
             </motion.div>
-            <div className="flex items-center space-x-4">
-              <Balance />
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Menu as="div" className="relative">
                 <Menu.Button
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center space-x-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${
                     darkMode 
                       ? 'hover:bg-gray-700 text-gray-300' 
                       : 'hover:bg-gray-100 text-gray-600'
@@ -139,18 +316,6 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setBridgeMode(!bridgeMode)}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  darkMode 
-                    ? 'hover:bg-gray-700 text-gray-300' 
-                    : 'hover:bg-gray-100 text-gray-600'
-                } ${bridgeMode ? 'text-purple-500' : ''}`}
-              >
-                <Bridge size={24} />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg transition-all duration-200 ${
                   darkMode 
@@ -158,8 +323,16 @@ function App() {
                     : 'hover:bg-gray-100 text-gray-600'
                 }`}
               >
-                {darkMode ? <Sun size={24} /> : <Moon size={24} />}
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
               </motion.button>
+
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title="Transaction History"
+              >
+                <History size={20} />
+              </button>
             </div>
           </div>
         </div>
@@ -170,70 +343,158 @@ function App() {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="max-w-2xl mx-auto p-6"
+        className="flex-1 max-w-2xl mx-auto p-4 sm:p-6 mb-16 sm:mb-20"
       >
         <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className={`rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl ${
+          whileHover={{ scale: 1 }}
+          className={`rounded-2xl shadow-xl p-4 sm:p-8 transform transition-all duration-300 hover:shadow-2xl ${
             darkMode ? 'bg-gray-800' : 'bg-white'
           }`}
         >
-          <h1 className={`text-3xl font-bold mb-2 ${
-            darkMode ? 'text-white' : 'text-gray-800'
-          }`}>
-            {bridgeMode ? 'Monad Bridge' : 'Monad Token Disperser'}
-          </h1>
-          <p className={`mb-6 ${
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
+            <h1 className={`text-2xl sm:text-3xl font-bold ${
+              darkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              Monad Disperser
+            </h1>
+            <button
+              onClick={() => setSameValueMode(!sameValueMode)}
+              className={`flex items-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
+                sameValueMode
+                  ? 'bg-purple-600 text-white'
+                  : darkMode
+                    ? 'hover:bg-gray-700 text-gray-300'
+                    : 'hover:bg-gray-100 text-gray-600'
+              }`}
+            >
+              <Repeat size={16} className="sm:hidden" />
+              <Repeat size={20} className="hidden sm:block" />
+              <span>Same Value Mode</span>
+            </button>
+          </div>
+
+          <p className={`mb-4 sm:mb-6 text-sm sm:text-base ${
             darkMode ? 'text-gray-300' : 'text-gray-600'
           }`}>
-            Enter addresses and values in any of these formats:
-            <br />
-            <code className={`${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-              address value
-              <br />
-              address,value
-              <br />
-              address:value
-            </code>
+            {sameValueMode ? (
+              <>
+                Enter addresses (one per line) and specify a single value to send to all addresses:
+                <br />
+                <code className={`${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                  0x1234...5678
+                  <br />
+                  0x8765...4321
+                  <br />
+                  0xabcd...efgh
+                </code>
+              </>
+            ) : (
+              <>
+                Enter addresses and values in any of these formats:
+                <br />
+                <code className={`${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                  address value
+                  <br />
+                  address,value
+                  <br />
+                  address:value
+                </code>
+              </>
+            )}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            {sameValueMode && (
+              <div className="mb-3 sm:mb-4">
+                <input
+                  type="number"
+                  value={sameValue}
+                  onChange={(e) => setSameValue(e.target.value)}
+                  placeholder="Enter value to send to all addresses"
+                  className={`w-full p-3 sm:p-4 rounded-lg font-mono text-xs sm:text-sm transition-all duration-200 ${
+                    darkMode 
+                      ? 'bg-gray-700 text-gray-100 border-gray-600 focus:border-purple-500' 
+                      : 'bg-white text-gray-800 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                  } border`}
+                />
+              </div>
+            )}
+
             <div className="relative">
               <textarea
-                className={`w-full h-64 p-4 rounded-lg font-mono text-sm transition-all duration-200 ${
+                className={`w-full h-48 sm:h-64 p-3 sm:p-4 rounded-lg font-mono text-xs sm:text-sm transition-all duration-200 ${
                   darkMode 
                     ? 'bg-gray-700 text-gray-100 border-gray-600 focus:border-purple-500' 
                     : 'bg-white text-gray-800 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
                 } border`}
-                placeholder="0x1234...5678 100&#13;&#10;0x8765...4321,50&#13;&#10;0xabcd...efgh:75"
+                placeholder={sameValueMode 
+                  ? "0x1234...5678\n0x8765...4321\n0xabcd...efgh"
+                  : "0x1234...5678 100\n0x8765...4321,50\n0xabcd...efgh:75"
+                }
                 value={input}
                 onChange={(e) => {
-                  setInput(e.target.value);
-                  parseAddressValues(e.target.value);
+                  const newInput = e.target.value;
+                  setInput(newInput);
+                  // Always parse when input changes
+                  parseAddressValues(newInput);
                 }}
               />
             </div>
 
             {error && (
-              <div className={`flex items-center space-x-2 p-3 rounded-lg animate-fade-in ${
+              <div className={`flex items-center space-x-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
                 darkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-50 text-red-500'
               }`}>
-                <AlertCircle size={20} />
+                <AlertCircle size={16} className="sm:hidden" />
+                <AlertCircle size={20} className="hidden sm:block" />
                 <span>{error}</span>
               </div>
             )}
 
             {success && (
-              <div className={`flex items-center space-x-2 p-3 rounded-lg animate-fade-in ${
+              <div className={`flex flex-col space-y-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
                 darkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-50 text-green-500'
               }`}>
-                <CheckCircle2 size={20} />
-                <span>Transaction sent successfully!</span>
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 size={16} className="sm:hidden" />
+                  <CheckCircle2 size={20} className="hidden sm:block" />
+                  <span>{isContractDeployed ? "Contract deployed successfully!" : "Transaction sent successfully!"}</span>
+                </div>
+                {contractAddress && (
+                  <div className="flex items-center space-x-2">
+                    <span>Contract Address:</span>
+                    <a 
+                      href={`https://testnet.monadexplorer.com/address/${contractAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-1 underline hover:text-purple-400"
+                    >
+                      <span className="truncate max-w-[150px] sm:max-w-[200px]">{contractAddress}</span>
+                      <ExternalLink size={12} className="sm:hidden" />
+                      <ExternalLink size={14} className="hidden sm:block" />
+                    </a>
+                  </div>
+                )}
+                {transactionHash && (
+                  <div className="flex items-center space-x-2">
+                    <span>Transaction Hash:</span>
+                    <a 
+                      href={`https://testnet.monadexplorer.com/tx/${transactionHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-1 underline hover:text-purple-400"
+                    >
+                      <span className="truncate max-w-[150px] sm:max-w-[200px]">{transactionHash}</span>
+                      <ExternalLink size={12} className="sm:hidden" />
+                      <ExternalLink size={14} className="hidden sm:block" />
+                    </a>
+                  </div>
+                )}
               </div>
             )}
 
             <div className="flex justify-between items-center">
-              <div className={`text-sm ${
+              <div className={`text-xs sm:text-sm ${
                 darkMode ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 {parsedData.length} valid entries found
@@ -241,24 +502,24 @@ function App() {
             </div>
 
             {parsedData.length > 0 && (
-              <div className="mt-8 space-y-2">
-                <h2 className={`text-xl font-semibold mb-4 ${
+              <div className="mt-4 sm:mt-8 space-y-2">
+                <h2 className={`text-lg sm:text-xl font-semibold mb-2 sm:mb-4 ${
                   darkMode ? 'text-white' : 'text-gray-800'
                 }`}>Parsed Data</h2>
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-48 sm:max-h-64 overflow-y-auto">
                   {parsedData.map((item, index) => (
                     <div
                       key={index}
-                      className={`p-3 rounded-lg flex justify-between items-center animate-fade-in ${
+                      className={`p-2 sm:p-3 rounded-lg flex justify-between items-center animate-fade-in ${
                         darkMode ? 'bg-gray-700' : 'bg-gray-50'
                       }`}
                     >
-                      <div className={`font-mono text-sm truncate ${
+                      <div className={`font-mono text-xs sm:text-sm truncate max-w-[40%] sm:max-w-[50%] ${
                         darkMode ? 'text-gray-300' : 'text-gray-600'
                       }`}>
                         {item.address}
                       </div>
-                      <div className={`font-mono text-sm ${
+                      <div className={`font-mono text-xs sm:text-sm ${
                         darkMode ? 'text-purple-400' : 'text-purple-600'
                       }`}>
                         {item.value}
@@ -270,18 +531,48 @@ function App() {
             )}
             
             {/* Total Value Component */}
-            <div className="mt-8">
-              <TotalValue parsedData={parsedData} darkMode={darkMode} />
+            <div className="mt-4 sm:mt-8">
+             {isConnected && <TotalValue parsedData={parsedData} darkMode={darkMode} />}
+            </div>
+
+            {/* Deploy Contract Button */}
+            <div className="mt-4 sm:mt-8 flex justify-end">
+              <button
+                type="button"
+                onClick={handleDeployContract}
+                disabled={isDeploying || !isConnected || isContractDeployed}
+                className={`
+                  flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base
+                  ${isDeploying || !isConnected || isContractDeployed
+                    ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 transform hover:scale-105'
+                  }
+                  text-white font-medium transition-all duration-200
+                `}
+              >
+                {isDeploying ? (
+                  <>
+                    <Loader2 className="animate-spin sm:hidden" size={16} />
+                    <Loader2 className="animate-spin hidden sm:block" size={20} />
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} className="sm:hidden" />
+                    <Upload size={20} className="hidden sm:block" />
+                  </>
+                )}
+                <span>{isContractDeployed ? 'Contract Deployed' : 'Deploy Contract'}</span>
+              </button>
             </div>
 
             {/* Send Button moved to the end */}
-            <div className="mt-8 flex justify-end">
+            <div className="mt-4 sm:mt-8 flex justify-end">
               <button
                 type="submit"
-                disabled={isLoading || parsedData.length === 0 || remainingBalance < 0}
+                disabled={isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed}
                 className={`
-                  flex items-center space-x-2 px-6 py-3 rounded-lg
-                  ${isLoading || parsedData.length === 0 || remainingBalance < 0
+                  flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base
+                  ${isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed
                     ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
                     : 'bg-purple-600 hover:bg-purple-700 transform hover:scale-105'
                   }
@@ -289,27 +580,43 @@ function App() {
                 `}
               >
                 {isLoading ? (
-                  <Loader2 className="animate-spin" size={20} />
+                  <>
+                    <Loader2 className="animate-spin sm:hidden" size={16} />
+                    <Loader2 className="animate-spin hidden sm:block" size={20} />
+                  </>
                 ) : (
-                  <Send size={20} />
+                  <>
+                    <Send size={16} className="sm:hidden" />
+                    <Send size={20} className="hidden sm:block" />
+                  </>
                 )}
-                <span>{isLoading ? 'Processing...' : bridgeMode ? 'Bridge Tokens' : 'Send Tokens'}</span>
+                <span>Disperse</span>
               </button>
             </div>
 
             {remainingBalance < 0 && (
-              <div className={`mt-4 flex items-center space-x-2 p-3 rounded-lg animate-fade-in ${
+              <div className={`mt-2 sm:mt-4 flex items-center space-x-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
                 darkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-50 text-red-500'
               }`}>
-                <AlertCircle size={20} />
+                <AlertCircle size={16} className="sm:hidden" />
+                <AlertCircle size={20} className="hidden sm:block" />
                 <span>Insufficient balance. You need {Math.abs(remainingBalance)} more MON to complete this transaction.</span>
               </div>
             )}
           </form>
         </motion.div>
       </motion.div>
+
+      <TransactionHistory
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        transactions={transactions}
+        darkMode={darkMode}
+      />
+
+      <Footer darkMode={darkMode} />
     </motion.div>
   );
 }
 
-export default App; 
+export default App;
