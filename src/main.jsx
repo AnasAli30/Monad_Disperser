@@ -28,7 +28,7 @@ createAppKit({
   metadata,
   projectId,
   features: {
-    analytics: true
+    connectMethodsOrder: ['wallet'],
   }
 });
 
