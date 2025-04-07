@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { Send, Loader2, AlertCircle, CheckCircle2, Moon, Sun } from 'lucide-react';
+import { Send, Loader2, AlertCircle, CheckCircle2, Moon, Sun, Grid as Bridge } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
 import { useAppKitAccount } from "@reown/appkit/react";
+import Balance from './components/Balance';
+import TotalValue from './components/TotalValue';
 // import {  useConnect, useDisconnect } from '@reown/appkit/react';
 
 function ConnectButton() {
@@ -16,6 +18,9 @@ function App() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [bridgeMode, setBridgeMode] = useState(false);
+  const [totalValue, setTotalValue] = useState(0);
+  const [remainingBalance, setRemainingBalance] = useState(0);
   
   const { address, isConnected } = useAppKitAccount();
 //   const { connect } = useConnect();
@@ -25,6 +30,7 @@ function App() {
     setError('');
     const lines = text.split('\n').filter(line => line.trim());
     const parsed = [];
+    let total = 0;
 
     for (const line of lines) {
       let address, value;
@@ -51,12 +57,23 @@ function App() {
         continue;
       }
 
+      const numericValue = parseFloat(value.trim());
+      if (isNaN(numericValue)) {
+        setError('Invalid numeric value detected');
+        continue;
+      }
+
+      total += numericValue;
       parsed.push({
         address: address.trim(),
         value: value.trim()
       });
     }
 
+    setTotalValue(total);
+    // Assuming we have a way to get the current balance, for now using a placeholder
+    const currentBalance = 1000; // Replace this with actual balance from your wallet/contract
+    setRemainingBalance(currentBalance - total);
     setParsedData(parsed);
   }, []);
 
@@ -106,6 +123,7 @@ function App() {
               </span>
             </motion.div>
             <div className="flex items-center space-x-4">
+              <Balance />
               <Menu as="div" className="relative">
                 <Menu.Button
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -118,6 +136,18 @@ function App() {
                 </Menu.Button>
               </Menu>
 
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setBridgeMode(!bridgeMode)}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  darkMode 
+                    ? 'hover:bg-gray-700 text-gray-300' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                } ${bridgeMode ? 'text-purple-500' : ''}`}
+              >
+                <Bridge size={24} />
+              </motion.button>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -151,7 +181,7 @@ function App() {
           <h1 className={`text-3xl font-bold mb-2 ${
             darkMode ? 'text-white' : 'text-gray-800'
           }`}>
-            Monad Token Disperser
+            {bridgeMode ? 'Monad Bridge' : 'Monad Token Disperser'}
           </h1>
           <p className={`mb-6 ${
             darkMode ? 'text-gray-300' : 'text-gray-600'
@@ -208,12 +238,50 @@ function App() {
               }`}>
                 {parsedData.length} valid entries found
               </div>
+            </div>
+
+            {parsedData.length > 0 && (
+              <div className="mt-8 space-y-2">
+                <h2 className={`text-xl font-semibold mb-4 ${
+                  darkMode ? 'text-white' : 'text-gray-800'
+                }`}>Parsed Data</h2>
+                <div className="max-h-64 overflow-y-auto">
+                  {parsedData.map((item, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg flex justify-between items-center animate-fade-in ${
+                        darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                      }`}
+                    >
+                      <div className={`font-mono text-sm truncate ${
+                        darkMode ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        {item.address}
+                      </div>
+                      <div className={`font-mono text-sm ${
+                        darkMode ? 'text-purple-400' : 'text-purple-600'
+                      }`}>
+                        {item.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Total Value Component */}
+            <div className="mt-8">
+              <TotalValue parsedData={parsedData} darkMode={darkMode} />
+            </div>
+
+            {/* Send Button moved to the end */}
+            <div className="mt-8 flex justify-end">
               <button
                 type="submit"
-                disabled={isLoading || parsedData.length === 0}
+                disabled={isLoading || parsedData.length === 0 || remainingBalance < 0}
                 className={`
                   flex items-center space-x-2 px-6 py-3 rounded-lg
-                  ${isLoading || parsedData.length === 0
+                  ${isLoading || parsedData.length === 0 || remainingBalance < 0
                     ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
                     : 'bg-purple-600 hover:bg-purple-700 transform hover:scale-105'
                   }
@@ -225,39 +293,19 @@ function App() {
                 ) : (
                   <Send size={20} />
                 )}
-                <span>{isLoading ? 'Processing...' : 'Send Tokens'}</span>
+                <span>{isLoading ? 'Processing...' : bridgeMode ? 'Bridge Tokens' : 'Send Tokens'}</span>
               </button>
             </div>
-          </form>
 
-          {parsedData.length > 0 && (
-            <div className="mt-8 space-y-2">
-              <h2 className={`text-xl font-semibold mb-4 ${
-                darkMode ? 'text-white' : 'text-gray-800'
-              }`}>Parsed Data</h2>
-              <div className="max-h-64 overflow-y-auto">
-                {parsedData.map((item, index) => (
-                  <div
-                    key={index}
-                    className={`p-3 rounded-lg flex justify-between items-center animate-fade-in ${
-                      darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                    }`}
-                  >
-                    <div className={`font-mono text-sm truncate ${
-                      darkMode ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      {item.address}
-                    </div>
-                    <div className={`font-mono text-sm ${
-                      darkMode ? 'text-purple-400' : 'text-purple-600'
-                    }`}>
-                      {item.value}
-                    </div>
-                  </div>
-                ))}
+            {remainingBalance < 0 && (
+              <div className={`mt-4 flex items-center space-x-2 p-3 rounded-lg animate-fade-in ${
+                darkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-50 text-red-500'
+              }`}>
+                <AlertCircle size={20} />
+                <span>Insufficient balance. You need {Math.abs(remainingBalance)} more MON to complete this transaction.</span>
               </div>
-            </div>
-          )}
+            )}
+          </form>
         </motion.div>
       </motion.div>
     </motion.div>
