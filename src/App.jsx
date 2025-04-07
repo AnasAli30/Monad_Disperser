@@ -1,24 +1,30 @@
 import React, { useState, useCallback } from 'react';
-import { Send, Loader2, AlertCircle, CheckCircle2, Moon, Sun, Grid as Bridge } from 'lucide-react';
+import { Send, Loader2, AlertCircle, CheckCircle2, Moon, Sun } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, Transition } from '@headlessui/react';
+import { useAppKitAccount } from "@reown/appkit/react";
+// import {  useConnect, useDisconnect } from '@reown/appkit/react';
 
-interface AddressValue {
-  address: string;
-  value: string;
+function ConnectButton() {
+  return <appkit-button />;
 }
 
 function App() {
   const [input, setInput] = useState('');
-  const [parsedData, setParsedData] = useState<AddressValue[]>([]);
+  const [parsedData, setParsedData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [bridgeMode, setBridgeMode] = useState(false);
+  
+  const { address, isConnected } = useAppKitAccount();
+//   const { connect } = useConnect();
+//   const { disconnect } = useDisconnect();
 
-  const parseAddressValues = useCallback((text: string) => {
+  const parseAddressValues = useCallback((text) => {
     setError('');
     const lines = text.split('\n').filter(line => line.trim());
-    const parsed: AddressValue[] = [];
+    const parsed = [];
 
     for (const line of lines) {
       let address, value;
@@ -54,7 +60,7 @@ function App() {
     setParsedData(parsed);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setSuccess(false);
@@ -72,34 +78,49 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-purple-50 to-blue-50'
-    }`}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-purple-50 to-blue-50'
+      }`}
+    >
       {/* Navigation Bar */}
-      <nav className={`${
-        darkMode ? 'bg-gray-800' : 'bg-white'
-      } shadow-lg transition-colors duration-300`}>
+      <motion.nav 
+        initial={{ y: -20 }}
+        animate={{ y: 0 }}
+        className={`${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        } shadow-lg transition-colors duration-300`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center"
+            >
               <span className={`text-2xl font-bold ${
                 darkMode ? 'text-white' : 'text-gray-800'
               }`}>
                 Monad
               </span>
-            </div>
+            </motion.div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setBridgeMode(!bridgeMode)}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  darkMode 
-                    ? 'hover:bg-gray-700 text-gray-300' 
-                    : 'hover:bg-gray-100 text-gray-600'
-                } ${bridgeMode ? 'text-purple-500' : ''}`}
-              >
-                <Bridge size={24} />
-              </button>
-              <button
+              <Menu as="div" className="relative">
+                <Menu.Button
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    darkMode 
+                      ? 'hover:bg-gray-700 text-gray-300' 
+                      : 'hover:bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  <ConnectButton />
+                </Menu.Button>
+              </Menu>
+
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg transition-all duration-200 ${
                   darkMode 
@@ -108,21 +129,29 @@ function App() {
                 }`}
               >
                 {darkMode ? <Sun size={24} /> : <Moon size={24} />}
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Main Content */}
-      <div className="max-w-2xl mx-auto p-6">
-        <div className={`rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        }`}>
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="max-w-2xl mx-auto p-6"
+      >
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className={`rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl ${
+            darkMode ? 'bg-gray-800' : 'bg-white'
+          }`}
+        >
           <h1 className={`text-3xl font-bold mb-2 ${
             darkMode ? 'text-white' : 'text-gray-800'
           }`}>
-            {bridgeMode ? 'Monad Bridge' : 'Monad Token Disperser'}
+            Monad Token Disperser
           </h1>
           <p className={`mb-6 ${
             darkMode ? 'text-gray-300' : 'text-gray-600'
@@ -196,7 +225,7 @@ function App() {
                 ) : (
                   <Send size={20} />
                 )}
-                <span>{isLoading ? 'Processing...' : bridgeMode ? 'Bridge Tokens' : 'Send Tokens'}</span>
+                <span>{isLoading ? 'Processing...' : 'Send Tokens'}</span>
               </button>
             </div>
           </form>
@@ -229,10 +258,10 @@ function App() {
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
 
-export default App;
+export default App; 
