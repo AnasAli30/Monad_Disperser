@@ -274,13 +274,21 @@ console.log(isContractDeployed,contractAddress)
     }
   };
 
+  // Check for first visit and handle loading screen
   useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
+    const hasVisited = localStorage.getItem('hasVisitedBefore');
+    
+    if (!hasVisited) {
+      // First visit - show loading screen for 2 seconds
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+        localStorage.setItem('hasVisitedBefore', 'true');
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else {
+      // Not first visit - hide loading screen immediately
       setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
+    }
   }, []);
 
   return (
