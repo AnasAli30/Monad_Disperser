@@ -10,6 +10,7 @@ import { deployContract } from './context/deploy';
 import TransactionHistory from './components/TransactionHistory';
 import Footer from './components/Footer';
 import ParticleBackground from './components/ParticleBackground';
+import LoadingScreen from './components/LoadingScreen';
 // import {  useConnect, useDisconnect } from '@reown/appkit/react';
 
 function ConnectButton() {
@@ -19,7 +20,7 @@ function ConnectButton() {
 function App() {
   const [input, setInput] = useState('');
   const [parsedData, setParsedData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -273,362 +274,371 @@ console.log(isContractDeployed,contractAddress)
     }
   };
 
+  useEffect(() => {
+    // Simulate loading time
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className={`min-h-screen flex flex-col ${
-        darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-purple-50 to-blue-50'
-      }`}
-    >
-      {/* Particle Background */}
-      <ParticleBackground darkMode={darkMode} />
-      
-      {/* Navigation Bar */}
-      <motion.nav 
-        initial={{ y: -20 }}
-        animate={{ y: 0 }}
-        className={`${
-          darkMode ? 'bg-gray-800/30' : 'bg-white/30'
-        } shadow-lg transition-colors duration-300 relative z-10 backdrop-blur-[2px]`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <motion.h1 
-                className={`text-xl font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                } relative`}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <span className="relative z-10">disperse</span>
-                {/* <motion.span 
-                  className="absolute inset-0 blur-sm opacity-70"
-                  animate={{ 
-                    opacity: [0.5, 0.8, 0.5],
-                    scale: [1, 1.05, 1]
-                  }}
-                  transition={{ 
-                    duration: 3,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
-                >
-                  Monad Disperser
-                </motion.span> */}
-              </motion.h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setIsHistoryOpen(true)}
-                className={`p-2 rounded-full transition-colors ${
-                  darkMode 
-                    ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-                title="Transaction History"
-              >
-                <History size={20} />
-              </button>
-              <motion.button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-full transition-colors ${
-                  darkMode 
-                    ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </motion.button>
-              <ConnectButton />
-            </div>
-          </div>
-        </div>
-      </motion.nav>
-
-      {/* Main Content */}
-      <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="flex-1 max-w-2xl mx-auto p-4 sm:p-6 mb-16 sm:mb-20 relative z-10"
-      >
-        <motion.div 
-          whileHover={{ scale: 1 }}
-          className={`rounded-2xl shadow-xl p-4 sm:p-8 transform transition-all duration-300 hover:shadow-2xl backdrop-blur-[2px] ${
-            darkMode 
-              ? 'bg-gray-800/30' 
-              : 'bg-white/30'
-          }`}
-        >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
-            <h1 className={`text-2xl sm:text-3xl font-bold ${
-              darkMode ? 'text-white' : 'text-gray-800'
-            }`}>
-              Monad Disperser
-            </h1>
-            <button
-              onClick={() => setSameValueMode(!sameValueMode)}
-              className={`flex items-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
-                sameValueMode
-                  ? 'bg-purple-600 text-white'
-                  : darkMode
-                    ? 'hover:bg-gray-700 text-gray-300'
-                    : 'hover:bg-gray-100 text-gray-600'
-              }`}
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+      <AnimatePresence mode="wait">
+        {isLoading ? (
+          <LoadingScreen />
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ParticleBackground darkMode={darkMode} />
+            
+            {/* Navigation Bar */}
+            <motion.nav 
+              initial={{ y: -20 }}
+              animate={{ y: 0 }}
+              className={`${
+                darkMode ? 'bg-gray-800/30' : 'bg-white/30'
+              } shadow-lg transition-colors duration-300 relative z-10 backdrop-blur-[2px]`}
             >
-              <Repeat size={16} className="sm:hidden" />
-              <Repeat size={20} className="hidden sm:block" />
-              <span>Same Value Mode</span>
-            </button>
-          </div>
-
-          <p className={`mb-4 sm:mb-6 text-sm sm:text-base ${
-            darkMode ? 'text-gray-300' : 'text-gray-600'
-          }`}>
-            {sameValueMode ? (
-              <>
-                Enter addresses (one per line) and specify a single value to send to all addresses:
-                <br />
-                <code className={`${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-                  0x1234...5678
-                  <br />
-                  0x8765...4321
-                  <br />
-                  0xabcd...efgh
-                </code>
-              </>
-            ) : (
-              <>
-                Enter addresses and values in any of these formats:
-                <br />
-                <code className={`${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-                  address value
-                  <br />
-                  address,value
-                  <br />
-                  address:value
-                </code>
-              </>
-            )}
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-            {sameValueMode && (
-              <div className="mb-3 sm:mb-4">
-                <input
-                  type="number"
-                  value={sameValue}
-                  onChange={(e) => setSameValue(e.target.value)}
-                  placeholder="Enter value to send to all addresses"
-                  className={`w-full p-3 sm:p-4 rounded-lg font-mono text-xs sm:text-sm transition-all duration-200 ${
-                    darkMode 
-                      ? 'bg-gray-700 text-gray-100 border-gray-600 focus:border-purple-500' 
-                      : 'bg-white text-gray-800 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
-                  } border`}
-                />
-              </div>
-            )}
-
-            <div className="relative">
-              <textarea
-                className={`w-full h-48 sm:h-64 p-3 sm:p-4 rounded-lg font-mono text-xs sm:text-sm transition-all duration-200 ${
-                  darkMode 
-                    ? 'bg-gray-700 text-gray-100 border-gray-600 focus:border-purple-500' 
-                    : 'bg-white text-gray-800 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
-                } border`}
-                placeholder={sameValueMode 
-                  ? "0x1234...5678\n0x8765...4321\n0xabcd...efgh"
-                  : "0x1234...5678 100\n0x8765...4321,50\n0xabcd...efgh:75"
-                }
-                value={input}
-                onChange={(e) => {
-                  const newInput = e.target.value;
-                  setInput(newInput);
-                  // Always parse when input changes
-                  parseAddressValues(newInput);
-                }}
-              />
-            </div>
-
-            {error && (
-              <div className={`flex items-center space-x-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
-                darkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-50 text-red-500'
-              }`}>
-                <AlertCircle size={16} className="sm:hidden" />
-                <AlertCircle size={20} className="hidden sm:block" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {success && (
-              <div className={`flex flex-col space-y-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
-                darkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-50 text-green-500'
-              }`}>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle2 size={16} className="sm:hidden" />
-                  <CheckCircle2 size={20} className="hidden sm:block" />
-                  <span>{isContractDeployed ? "Contract deployed successfully!" : "Transaction sent successfully!"}</span>
-                </div>
-                {contractAddress && (
-                  <div className="flex items-center space-x-2">
-                    <span>Contract Address:</span>
-                    <a 
-                      href={`https://testnet.monadexplorer.com/address/${contractAddress}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-1 underline hover:text-purple-400"
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16">
+                  <div className="flex items-center">
+                    <motion.h1 
+                      className={`text-xl font-bold ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      } relative`}
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
-                      <span className="truncate max-w-[150px] sm:max-w-[200px]">{contractAddress}</span>
-                      <ExternalLink size={12} className="sm:hidden" />
-                      <ExternalLink size={14} className="hidden sm:block" />
-                    </a>
+                      <span className="relative z-10">disperse</span>
+                      {/* <motion.span 
+                        className="absolute inset-0 blur-sm opacity-70"
+                        animate={{ 
+                          opacity: [0.5, 0.8, 0.5],
+                          scale: [1, 1.05, 1]
+                        }}
+                        transition={{ 
+                          duration: 3,
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }}
+                      >
+                        Monad Disperser
+                      </motion.span> */}
+                    </motion.h1>
                   </div>
-                )}
-                {transactionHash && (
-                  <div className="flex items-center space-x-2">
-                    <span>Transaction Hash:</span>
-                    <a 
-                      href={`https://testnet.monadexplorer.com/tx/${transactionHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-1 underline hover:text-purple-400"
-                    >
-                      <span className="truncate max-w-[150px] sm:max-w-[200px]">{transactionHash}</span>
-                      <ExternalLink size={12} className="sm:hidden" />
-                      <ExternalLink size={14} className="hidden sm:block" />
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex justify-between items-center">
-              <div className={`text-xs sm:text-sm ${
-                darkMode ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                {parsedData.length} valid entries found
-              </div>
-            </div>
-
-            {parsedData.length > 0 && (
-              <div className="mt-4 sm:mt-8 space-y-2">
-                <h2 className={`text-lg sm:text-xl font-semibold mb-2 sm:mb-4 ${
-                  darkMode ? 'text-white' : 'text-gray-800'
-                }`}>Parsed Data</h2>
-                <div className="max-h-48 sm:max-h-64 overflow-y-auto">
-                  {parsedData.map((item, index) => (
-                    <div
-                      key={index}
-                      className={`p-2 sm:p-3 rounded-lg flex justify-between items-center animate-fade-in ${
-                        darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={() => setIsHistoryOpen(true)}
+                      className={`p-2 rounded-full transition-colors ${
+                        darkMode 
+                          ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                       }`}
+                      title="Transaction History"
                     >
-                      <div className={`font-mono text-xs sm:text-sm truncate max-w-[40%] sm:max-w-[50%] ${
-                        darkMode ? 'text-gray-300' : 'text-gray-600'
-                      }`}>
-                        {item.address}
+                      <History size={20} />
+                    </button>
+                    <motion.button
+                      onClick={() => setDarkMode(!darkMode)}
+                      className={`p-2 rounded-full transition-colors ${
+                        darkMode 
+                          ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                    </motion.button>
+                    <ConnectButton />
+                  </div>
+                </div>
+              </div>
+            </motion.nav>
+
+            {/* Main Content */}
+            <main className="container mx-auto px-4 py-8 relative z-0">
+              <motion.div 
+                whileHover={{ scale: 1 }}
+                className={`rounded-2xl shadow-xl p-4 sm:p-8 transform transition-all duration-300 hover:shadow-2xl backdrop-blur-[2px] ${
+                  darkMode 
+                    ? 'bg-gray-800/30' 
+                    : 'bg-white/30'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
+                  <h1 className={`text-2xl sm:text-3xl font-bold ${
+                    darkMode ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    Monad Disperser
+                  </h1>
+                  <button
+                    onClick={() => setSameValueMode(!sameValueMode)}
+                    className={`flex items-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
+                      sameValueMode
+                        ? 'bg-purple-600 text-white'
+                        : darkMode
+                          ? 'hover:bg-gray-700 text-gray-300'
+                          : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    <Repeat size={16} className="sm:hidden" />
+                    <Repeat size={20} className="hidden sm:block" />
+                    <span>Same Value Mode</span>
+                  </button>
+                </div>
+
+                <p className={`mb-4 sm:mb-6 text-sm sm:text-base ${
+                  darkMode ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  {sameValueMode ? (
+                    <>
+                      Enter addresses (one per line) and specify a single value to send to all addresses:
+                      <br />
+                      <code className={`${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                        0x1234...5678
+                        <br />
+                        0x8765...4321
+                        <br />
+                        0xabcd...efgh
+                      </code>
+                    </>
+                  ) : (
+                    <>
+                      Enter addresses and values in any of these formats:
+                      <br />
+                      <code className={`${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                        address value
+                        <br />
+                        address,value
+                        <br />
+                        address:value
+                      </code>
+                    </>
+                  )}
+                </p>
+
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                  {sameValueMode && (
+                    <div className="mb-3 sm:mb-4">
+                      <input
+                        type="number"
+                        value={sameValue}
+                        onChange={(e) => setSameValue(e.target.value)}
+                        placeholder="Enter value to send to all addresses"
+                        className={`w-full p-3 sm:p-4 rounded-lg font-mono text-xs sm:text-sm transition-all duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700 text-gray-100 border-gray-600 focus:border-purple-500' 
+                            : 'bg-white text-gray-800 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                        } border`}
+                      />
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <textarea
+                      className={`w-full h-48 sm:h-64 p-3 sm:p-4 rounded-lg font-mono text-xs sm:text-sm transition-all duration-200 ${
+                        darkMode 
+                          ? 'bg-gray-700 text-gray-100 border-gray-600 focus:border-purple-500' 
+                          : 'bg-white text-gray-800 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                      } border`}
+                      placeholder={sameValueMode 
+                        ? "0x1234...5678\n0x8765...4321\n0xabcd...efgh"
+                        : "0x1234...5678 100\n0x8765...4321,50\n0xabcd...efgh:75"
+                      }
+                      value={input}
+                      onChange={(e) => {
+                        const newInput = e.target.value;
+                        setInput(newInput);
+                        // Always parse when input changes
+                        parseAddressValues(newInput);
+                      }}
+                    />
+                  </div>
+
+                  {error && (
+                    <div className={`flex items-center space-x-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
+                      darkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-50 text-red-500'
+                    }`}>
+                      <AlertCircle size={16} className="sm:hidden" />
+                      <AlertCircle size={20} className="hidden sm:block" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  {success && (
+                    <div className={`flex flex-col space-y-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
+                      darkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-50 text-green-500'
+                    }`}>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle2 size={16} className="sm:hidden" />
+                        <CheckCircle2 size={20} className="hidden sm:block" />
+                        <span>{isContractDeployed ? "Contract deployed successfully!" : "Transaction sent successfully!"}</span>
                       </div>
-                      <div className={`font-mono text-xs sm:text-sm ${
-                        darkMode ? 'text-purple-400' : 'text-purple-600'
-                      }`}>
-                        {item.value}
+                      {contractAddress && (
+                        <div className="flex items-center space-x-2">
+                          <span>Contract Address:</span>
+                          <a 
+                            href={`https://testnet.monadexplorer.com/address/${contractAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-1 underline hover:text-purple-400"
+                          >
+                            <span className="truncate max-w-[150px] sm:max-w-[200px]">{contractAddress}</span>
+                            <ExternalLink size={12} className="sm:hidden" />
+                            <ExternalLink size={14} className="hidden sm:block" />
+                          </a>
+                        </div>
+                      )}
+                      {transactionHash && (
+                        <div className="flex items-center space-x-2">
+                          <span>Transaction Hash:</span>
+                          <a 
+                            href={`https://testnet.monadexplorer.com/tx/${transactionHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-1 underline hover:text-purple-400"
+                          >
+                            <span className="truncate max-w-[150px] sm:max-w-[200px]">{transactionHash}</span>
+                            <ExternalLink size={12} className="sm:hidden" />
+                            <ExternalLink size={14} className="hidden sm:block" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center">
+                    <div className={`text-xs sm:text-sm ${
+                      darkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {parsedData.length} valid entries found
+                    </div>
+                  </div>
+
+                  {parsedData.length > 0 && (
+                    <div className="mt-4 sm:mt-8 space-y-2">
+                      <h2 className={`text-lg sm:text-xl font-semibold mb-2 sm:mb-4 ${
+                        darkMode ? 'text-white' : 'text-gray-800'
+                      }`}>Parsed Data</h2>
+                      <div className="max-h-48 sm:max-h-64 overflow-y-auto">
+                        {parsedData.map((item, index) => (
+                          <div
+                            key={index}
+                            className={`p-2 sm:p-3 rounded-lg flex justify-between items-center animate-fade-in ${
+                              darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                            }`}
+                          >
+                            <div className={`font-mono text-xs sm:text-sm truncate max-w-[40%] sm:max-w-[50%] ${
+                              darkMode ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
+                              {item.address}
+                            </div>
+                            <div className={`font-mono text-xs sm:text-sm ${
+                              darkMode ? 'text-purple-400' : 'text-purple-600'
+                            }`}>
+                              {item.value}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Total Value Component */}
-            <div className="mt-4 sm:mt-8">
-             {isConnected && <TotalValue parsedData={parsedData} darkMode={darkMode} />}
-            </div>
+                  )}
+                  
+                  {/* Total Value Component */}
+                  <div className="mt-4 sm:mt-8">
+                   {isConnected && <TotalValue parsedData={parsedData} darkMode={darkMode} />}
+                  </div>
 
-            {/* Deploy Contract Button */}
-            <div className="mt-4 sm:mt-8 flex justify-end">
-              <button
-                type="button"
-                onClick={handleDeployContract}
-                disabled={isDeploying || !isConnected || isContractDeployed}
-                className={`
-                  flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base
-                  ${isDeploying || !isConnected || isContractDeployed
-                    ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 transform hover:scale-105'
-                  }
-                  text-white font-medium transition-all duration-200
-                `}
-              >
-                {isDeploying ? (
-                  <>
-                    <Loader2 className="animate-spin sm:hidden" size={16} />
-                    <Loader2 className="animate-spin hidden sm:block" size={20} />
-                  </>
-                ) : (
-                  <>
-                    <Upload size={16} className="sm:hidden" />
-                    <Upload size={20} className="hidden sm:block" />
-                  </>
-                )}
-                <span>{isContractDeployed ? 'Contract Deployed' : 'Deploy Contract'}</span>
-              </button>
-            </div>
+                  {/* Deploy Contract Button */}
+                  <div className="mt-4 sm:mt-8 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleDeployContract}
+                      disabled={isDeploying || !isConnected || isContractDeployed}
+                      className={`
+                        flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base
+                        ${isDeploying || !isConnected || isContractDeployed
+                          ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 transform hover:scale-105'
+                        }
+                        text-white font-medium transition-all duration-200
+                      `}
+                    >
+                      {isDeploying ? (
+                        <>
+                          <Loader2 className="animate-spin sm:hidden" size={16} />
+                          <Loader2 className="animate-spin hidden sm:block" size={20} />
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={16} className="sm:hidden" />
+                          <Upload size={20} className="hidden sm:block" />
+                        </>
+                      )}
+                      <span>{isContractDeployed ? 'Contract Deployed' : 'Deploy Contract'}</span>
+                    </button>
+                  </div>
 
-            {/* Send Button moved to the end */}
-            <div className="mt-4 sm:mt-8 flex justify-end">
-              <button
-                type="submit"
-                disabled={isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed}
-                className={`
-                  flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base
-                  ${isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed
-                    ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
-                    : 'bg-purple-600 hover:bg-purple-700 transform hover:scale-105'
-                  }
-                  text-white font-medium transition-all duration-200
-                `}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="animate-spin sm:hidden" size={16} />
-                    <Loader2 className="animate-spin hidden sm:block" size={20} />
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} className="sm:hidden" />
-                    <Send size={20} className="hidden sm:block" />
-                  </>
-                )}
-                <span>Disperse</span>
-              </button>
-            </div>
+                  {/* Send Button moved to the end */}
+                  <div className="mt-4 sm:mt-8 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed}
+                      className={`
+                        flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base
+                        ${isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed
+                          ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700 transform hover:scale-105'
+                        }
+                        text-white font-medium transition-all duration-200
+                      `}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="animate-spin sm:hidden" size={16} />
+                          <Loader2 className="animate-spin hidden sm:block" size={20} />
+                        </>
+                      ) : (
+                        <>
+                          <Send size={16} className="sm:hidden" />
+                          <Send size={20} className="hidden sm:block" />
+                        </>
+                      )}
+                      <span>Disperse</span>
+                    </button>
+                  </div>
 
-            {remainingBalance < 0 && (
-              <div className={`mt-2 sm:mt-4 flex items-center space-x-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
-                darkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-50 text-red-500'
-              }`}>
-                <AlertCircle size={16} className="sm:hidden" />
-                <AlertCircle size={20} className="hidden sm:block" />
-                <span>Insufficient balance. You need {Math.abs(remainingBalance)} more MON to complete this transaction.</span>
-              </div>
-            )}
-          </form>
-        </motion.div>
-      </motion.div>
+                  {remainingBalance < 0 && (
+                    <div className={`mt-2 sm:mt-4 flex items-center space-x-2 p-2 sm:p-3 rounded-lg animate-fade-in text-xs sm:text-sm ${
+                      darkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-50 text-red-500'
+                    }`}>
+                      <AlertCircle size={16} className="sm:hidden" />
+                      <AlertCircle size={20} className="hidden sm:block" />
+                      <span>Insufficient balance. You need {Math.abs(remainingBalance)} more MON to complete this transaction.</span>
+                    </div>
+                  )}
+                </form>
+              </motion.div>
+            </main>
 
-      <TransactionHistory
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        transactions={transactions}
-        darkMode={darkMode}
-      />
+            <TransactionHistory
+              isOpen={isHistoryOpen}
+              onClose={() => setIsHistoryOpen(false)}
+              transactions={transactions}
+              darkMode={darkMode}
+            />
 
-      <Footer darkMode={darkMode} />
-    </motion.div>
+            <Footer darkMode={darkMode} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
