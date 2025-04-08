@@ -11,14 +11,18 @@ const TransactionHistory = ({ isOpen, onClose, transactions, darkMode }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+        darkMode ? 'bg-black/50' : 'bg-gray-900/50'
+      } backdrop-blur-[2px]`}
+    >
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className={`w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        }`}
+        className={`w-full max-w-2xl rounded-lg shadow-xl ${
+          darkMode ? 'bg-gray-800/30' : 'bg-white/30'
+        } backdrop-blur-[2px]`}
       >
         <div className={`flex justify-between items-center p-4 border-b ${
           darkMode ? 'border-gray-700' : 'border-gray-200'
@@ -52,12 +56,10 @@ const TransactionHistory = ({ isOpen, onClose, transactions, darkMode }) => {
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`rounded-lg p-4 transition-all duration-200 ${
-                    darkMode 
-                      ? 'bg-gray-700 hover:bg-gray-600' 
-                      : 'bg-gray-50 hover:bg-gray-100'
-                  }`}
+                  exit={{ opacity: 0, y: -20 }}
+                  className={`p-4 rounded-lg ${
+                    darkMode ? 'bg-gray-700/30' : 'bg-gray-50/30'
+                  } backdrop-blur-[2px]`}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -130,7 +132,7 @@ const TransactionHistory = ({ isOpen, onClose, transactions, darkMode }) => {
           )}
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
 

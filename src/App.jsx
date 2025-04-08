@@ -9,6 +9,7 @@ import { dispere } from './context/despere';
 import { deployContract } from './context/deploy';
 import TransactionHistory from './components/TransactionHistory';
 import Footer from './components/Footer';
+import ParticleBackground from './components/ParticleBackground';
 // import {  useConnect, useDisconnect } from '@reown/appkit/react';
 
 function ConnectButton() {
@@ -280,59 +281,69 @@ console.log(isContractDeployed,contractAddress)
         darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-purple-50 to-blue-50'
       }`}
     >
+      {/* Particle Background */}
+      <ParticleBackground darkMode={darkMode} />
+      
       {/* Navigation Bar */}
       <motion.nav 
         initial={{ y: -20 }}
         animate={{ y: 0 }}
         className={`${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        } shadow-lg transition-colors duration-300`}
+          darkMode ? 'bg-gray-800/30' : 'bg-white/30'
+        } shadow-lg transition-colors duration-300 relative z-10 backdrop-blur-[2px]`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center"
-            >
-              <span className={`text-xl sm:text-2xl font-bold ${
-                darkMode ? 'text-white' : 'text-gray-800'
-              }`}>
-                Monad
-              </span>
-            </motion.div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <Menu as="div" className="relative">
-                <Menu.Button
-                  className={`flex items-center space-x-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${
-                    darkMode 
-                      ? 'hover:bg-gray-700 text-gray-300' 
-                      : 'hover:bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  <ConnectButton />
-                </Menu.Button>
-              </Menu>
-
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  darkMode 
-                    ? 'hover:bg-gray-700 text-gray-300' 
-                    : 'hover:bg-gray-100 text-gray-600'
-                }`}
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <motion.h1 
+                className={`text-xl font-bold ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                } relative`}
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </motion.button>
-
+                <span className="relative z-10">disperse</span>
+                {/* <motion.span 
+                  className="absolute inset-0 blur-sm opacity-70"
+                  animate={{ 
+                    opacity: [0.5, 0.8, 0.5],
+                    scale: [1, 1.05, 1]
+                  }}
+                  transition={{ 
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatType: "reverse"
+                  }}
+                >
+                  Monad Disperser
+                </motion.span> */}
+              </motion.h1>
+            </div>
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => setIsHistoryOpen(true)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className={`p-2 rounded-full transition-colors ${
+                  darkMode 
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
                 title="Transaction History"
               >
                 <History size={20} />
               </button>
+              <motion.button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-full transition-colors ${
+                  darkMode 
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </motion.button>
+              <ConnectButton />
             </div>
           </div>
         </div>
@@ -343,12 +354,14 @@ console.log(isContractDeployed,contractAddress)
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex-1 max-w-2xl mx-auto p-4 sm:p-6 mb-16 sm:mb-20"
+        className="flex-1 max-w-2xl mx-auto p-4 sm:p-6 mb-16 sm:mb-20 relative z-10"
       >
         <motion.div 
           whileHover={{ scale: 1 }}
-          className={`rounded-2xl shadow-xl p-4 sm:p-8 transform transition-all duration-300 hover:shadow-2xl ${
-            darkMode ? 'bg-gray-800' : 'bg-white'
+          className={`rounded-2xl shadow-xl p-4 sm:p-8 transform transition-all duration-300 hover:shadow-2xl backdrop-blur-[2px] ${
+            darkMode 
+              ? 'bg-gray-800/30' 
+              : 'bg-white/30'
           }`}
         >
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">

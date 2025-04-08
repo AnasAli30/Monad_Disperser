@@ -6,8 +6,8 @@ import { arbitrum, mainnet ,monadTestnet} from '@reown/appkit/networks';
 import App from './App';
 import './index.css';
 
-// 1. Get projectId
-const projectId = '3c76f181698781d2991464f97c01b88d';
+// Replace the hardcoded project ID with the environment variable
+const projectId = import.meta.env.VITE_PROJECT_ID;
 
 // 2. Set the networks
 

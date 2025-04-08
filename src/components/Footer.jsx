@@ -9,9 +9,9 @@ const Footer = ({ darkMode }) => {
       animate={{ opacity: 1, y: 0 }}
       className={`w-full py-3 px-4 sm:px-6 border-t ${
         darkMode 
-          ? 'bg-gray-800 border-gray-700' 
-          : 'bg-white border-gray-200'
-      } shadow-lg transition-colors duration-300 mt-auto`}
+          ? 'bg-gray-800/30 border-gray-700/50' 
+          : 'bg-white/30 border-gray-200/50'
+      } shadow-lg transition-colors duration-300 mt-auto backdrop-blur-[2px]`}
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
         <motion.div 
@@ -50,7 +50,7 @@ const Footer = ({ darkMode }) => {
           whileTap={{ scale: 0.95 }}
         >
           <a
-            href="https://github.com/yourusername/monad-disperser"
+            href="https://github.com/AnasAli30/Monad_Disperser"
             target="_blank"
             rel="noopener noreferrer"
             className={`flex items-center space-x-2 text-sm transition-colors duration-300 ${
