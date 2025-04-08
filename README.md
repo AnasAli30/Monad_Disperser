@@ -1,5 +1,7 @@
 # Monad Disperser
 
+![image](https://github.com/user-attachments/assets/1285f6dc-a027-4dbf-af3f-94870e407d7d)
+
 A powerful and user-friendly application for dispersing MON tokens to multiple addresses on the Monad blockchain.
 
 ## Features
