@@ -20,7 +20,8 @@ function ConnectButton() {
 function App() {
   const [input, setInput] = useState('');
   const [parsedData, setParsedData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isDispersing, setIsDispersing] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -214,9 +215,9 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setSuccess(false);
+    setIsDispersing(true);
     setError('');
+    setSuccess(false);
     setTransactionHash('');
 
     try {
@@ -270,7 +271,7 @@ console.log(isContractDeployed,contractAddress)
       console.error('Error in handleSubmit:', err);
       setError(err.message || 'Failed to send transaction');
     } finally {
-      setIsLoading(false);
+      setIsDispersing(false);
     }
   };
 
@@ -281,20 +282,36 @@ console.log(isContractDeployed,contractAddress)
     if (!hasVisited) {
       // First visit - show loading screen for 2 seconds
       const timer = setTimeout(() => {
-        setIsLoading(false);
+        setIsInitialLoading(false);
         localStorage.setItem('hasVisitedBefore', 'true');
       }, 2000);
       return () => clearTimeout(timer);
     } else {
       // Not first visit - hide loading screen immediately
-      setIsLoading(false);
+      setIsInitialLoading(false);
     }
   }, []);
+
+  const handleDisperse = async () => {
+    if (!parsedData.length) return;
+    
+    setIsDispersing(true);
+    setError('');
+    setSuccess(false);
+    
+    try {
+      // ... rest of your disperse logic ...
+    } catch (err) {
+      setError(err.message || 'Failed to disperse tokens');
+    } finally {
+      setIsDispersing(false);
+    }
+  };
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <AnimatePresence mode="wait">
-        {isLoading ? (
+        {isInitialLoading ? (
           <LoadingScreen />
         ) : (
           <motion.div
@@ -597,17 +614,17 @@ console.log(isContractDeployed,contractAddress)
                   <div className="mt-4 sm:mt-8 flex justify-end">
                     <button
                       type="submit"
-                      disabled={isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed}
+                      disabled={isDispersing || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed}
                       className={`
                         flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base
-                        ${isLoading || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed
+                        ${isDispersing || parsedData.length === 0 || remainingBalance < 0 || !isContractDeployed
                           ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
                           : 'bg-purple-600 hover:bg-purple-700 transform hover:scale-105'
                         }
                         text-white font-medium transition-all duration-200
                       `}
                     >
-                      {isLoading ? (
+                      {isDispersing ? (
                         <>
                           <Loader2 className="animate-spin sm:hidden" size={16} />
                           <Loader2 className="animate-spin hidden sm:block" size={20} />
