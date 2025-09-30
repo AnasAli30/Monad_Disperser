@@ -339,7 +339,7 @@ console.log(isContractDeployed,contractAddress)
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
-                      <span className="relative z-10">disperse</span>
+                      <span className="relative z-10">Monad Disperse</span>
                       {/* <motion.span 
                         className="absolute inset-0 blur-sm opacity-70"
                         animate={{ 
@@ -397,11 +397,6 @@ console.log(isContractDeployed,contractAddress)
                 }`}
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
-                  <h1 className={`text-2xl sm:text-3xl font-bold ${
-                    darkMode ? 'text-white' : 'text-gray-800'
-                  }`}>
-                    Monad Disperser
-                  </h1>
                   <button
                     onClick={() => setSameValueMode(!sameValueMode)}
                     className={`flex items-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
